@@ -1,0 +1,79 @@
+# kuavo_server 统一启动配置 (configs/server/launcher.yaml)
+#
+# 用法（任选其一）：
+#   python kuavo_server/launch.py openpi
+#   python kuavo_server/launch.py groot
+#   python kuavo_server/launch.py lingbotvla
+#
+# 启动器会读取下面对应 adapter 的 env 段（决定怎么进入环境：uv / conda / 当前 shell）
+# 与 args 段（serve.py 的命令行参数），自动拼出原命令并 exec 运行。
+#
+# 规则：
+#   - args 下的 key 直接对应 serve.py 的 --xxx 参数。
+#   - 值为 true 的布尔会变成 --flag；值为 false / null / "" 的会被忽略，使用 adapter 内置默认。
+#   - 路径可写绝对路径或 ${REPO_ROOT}/... 占位符（REPO_ROOT 自动指向本仓库根）。
+#   - 每个 adapter 下方列出了**全部**可用参数；不想覆盖默认值的留空字符串 "" 即可。
+#   - YAML 里的 key 是用户在命令行写的"短名"；若该短名 != 真实 adapter 名（如 groot != isaac_gr00t_n17），
+#     用块内的 `adapter: <真实名>` 显式声明真实 adapter；不写时默认短名就是真实名（如 openpi）。
+
+# 全局服务端参数（所有 adapter 共用，可被各 adapter 内的 args 覆盖）
+common:
+  host: "*"
+  port: 5555
+  api_token: ""
+
+adapters:
+
+  # ============================================================
+  # OpenPI
+  # ============================================================
+  openpi:
+    env:
+      mode: uv                                                # uv | conda | none
+      project: ${REPO_ROOT}/kuavo_model/external_models/openpi
+    args:
+      checkpoint: /path/to/openpi/checkpoint                  # 必填：openpi checkpoint 目录
+      policy_config_name: pi0_kuavo                           # openpi 训练 config 名
+      which_arm: both                                         # left | right | both（adapter 默认 right）
+      model_repo_root: ""                                     # 留空 -> external_models/openpi
+      execution_horizon: 0                                    # 0 -> 用 config.model.action_horizon
+      device: ""                                              # "" | cuda | cuda:0 | cpu
+      asset_id: ""                                            # "" -> auto-detect from checkpoint/assets/*
+
+  # ============================================================
+  # Isaac GR00T N1.7 
+  # ============================================================
+  groot:
+    adapter: isaac_gr00t_n17
+    env:
+      mode: uv
+      project: ${REPO_ROOT}/kuavo_model/external_models/gr00tn1d7
+    args:
+      checkpoint: /path/to/gr00t/checkpoint                   # 必填
+      embodiment_tag: NEW_EMBODIMENT                          # 或 new_embodiment
+      which_arm: both
+      execution_horizon: 16                                   # receding horizon chunk size
+      device: cuda
+      strict: false                                           # true 时开启严格 IO 检查
+      model_repo_root: ""                                     # 留空 -> external_models/gr00tn1d7
+
+  # ============================================================
+  # LingBot-VLA 
+  # ============================================================
+  lingbotvla:
+    adapter: lingbot_vla
+    env:
+      mode: conda
+      conda_env: lingbotvla
+    args:
+      checkpoint: /path/to/lingbot/hf_ckpt                    # 必填：hf_ckpt 目录
+      training_config_path: /path/to/train_config.yaml        # 留空 -> configs/vla/real_load20000h.yaml
+      qwen25_path: /path/to/Qwen2.5-VL                        # 必填：Qwen2.5-VL tokenizer/model 目录
+      robot_norm_path: /path/to/robot_norm.json               # 必填：Kuavo norm stats JSON
+      robot_config_path: ""                                   # 留空 -> kuavo_server/configs/lingbotvla/kuavo.yaml
+      which_arm: both
+      execution_horizon: 25                                   # -1 返回模型完整 chunk
+      num_denoising_step: 10
+      use_compile: false                                      # torch.compile
+      use_fp32: false                                         # true 时用 fp32（默认 bf16）
+      model_repo_root: ""                                     # 留空 -> external_models/lingbot-vla

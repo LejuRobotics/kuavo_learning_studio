@@ -405,8 +405,6 @@ class KuavoBaseRosEnv(gym.Env):
 
         raise ValueError(f"Unsupported mode: {mode}")
 
-
-
     def step(self, action):
         t0 = time.time()
         log_robot.info(f"action: {action}")
@@ -439,54 +437,78 @@ class KuavoBaseRosEnv(gym.Env):
 
         # === 4. 执行动作 ===
         t2 = time.time()
-        self.cur_joint_angles_action = np.concatenate((action[:7], action[8:15]), axis=0)
-        if  not self.direct_to_wbc:
+        if self.which_arm == 'both':
+            self.cur_joint_angles_action = np.concatenate((action[:7], action[8:15]), axis=0)
+        elif self.which_arm == 'left':
+            self.cur_joint_angles_action = np.concatenate((action[:7], self.arm_init[7:14]), axis=0)
+        elif self.which_arm == 'right':
+            self.cur_joint_angles_action = np.concatenate((self.arm_init[:7], action[:7]), axis=0)
+        else:
+            raise ValueError(f"Invalid which_arm: {self.which_arm}")
+
+        if not self.direct_to_wbc:
             self.exec_action(action)
             self.rate.sleep()
         else:
-            # ==== 4.1插值下发动作
-            # ================ 第一帧的时候从current state 插值
-            #joint_q
-            
+            # ==== 4.1 插值下发动作（direct_to_wbc 路径）
+            # 第一帧从 current state 插值过去；之后每帧在 last_predicted_action -> action 之间插值。
+            # 关键：插值维度等于 action 维度（both=16，left/right=8），
+            # 下发到 WBC 时再补成 14 维双臂关节。单臂模式下非控制臂使用 arm_init 零位。
+
+            current_q = self._get_init_joint_angles(self.arm_state["joint_q"])
+            num_inter_points = self.interpolation_steps
+
             if self.is_first_step:
                 self.is_first_step = False
-                num_points = 10
-                current_q = self.arm_state["joint_q"]
 
-                left_joints, left_eef = action[:7], action[7]
-                right_joints, right_eef = action[8:15], action[15]
-                target_position = np.concatenate((left_joints, right_joints), axis=0)
-                current_q = np.asarray(current_q)
-                # print(f'======= current_q {current_q}')
-                # print(f'========= target_position {target_position}')
-                for i in range(num_points):
-                    alpha = (i + 1) / num_points
-                    inter_arm_action = (1 - alpha) * current_q + alpha * target_position
-                    
-                    self.safe_control_arm(inter_arm_action)
+                # 构造目标 14 维关节（仅关节，不含夹爪），用于第一帧从 current_q 平滑过去
+                if self.which_arm == 'both':
+                    target_joints14 = np.concatenate((action[:7], action[8:15]), axis=0)
+                elif self.which_arm == 'left':
+                    target_joints14 = np.concatenate((action[:7], self.arm_init[7:14]), axis=0)
+                else:  # right
+                    target_joints14 = np.concatenate((self.arm_init[:7], action[:7]), axis=0)
+
+                for i in range(num_inter_points):
+                    alpha = (i + 1) / num_inter_points
+                    inter_joints14 = (1 - alpha) * current_q + alpha * target_joints14
+                    self.safe_control_arm(inter_joints14)
                     self.control_rate.sleep()
-                    
 
-            left_joints, left_eef = action[:7], action[7]
-            right_joints, right_eef = action[8:15], action[15]
+                self.exec_action(action)
+                self.last_predicted_action = action.copy()
+            else:
+                # 后续每一帧：在 last_predicted_action 与 action 之间按 action 维度插值，
+                # 末端夹爪保持目标值不插（直接用本帧目标），然后调 exec_action 走对应的 left/right/both 分支
+                if self.last_predicted_action is None:
+                    self.last_predicted_action = action.copy()
 
-            left_eef, right_eef = action[7], action[15]
-            if self.last_predicted_action is None:
-                self.last_predicted_action = action
-            num_inter_points = 10
-            for i in range(num_inter_points):
-                alpha = (i + 1) / num_inter_points
-                inter_arm_action = (1 - alpha) * self.last_predicted_action + alpha * action
+                # 夹爪目标值（不参与插值）：每个分支只声明自己真正会用到的那个
+                if self.which_arm == 'both':
+                    left_eef = action[7]
+                    right_eef = action[15]
+                elif self.which_arm == 'left':
+                    left_eef = action[7]
+                else:  # right
+                    right_eef = action[7]
 
-                inter_arm_action[7] = left_eef
-                inter_arm_action[15] = right_eef
+                for i in range(num_inter_points):
+                    alpha = (i + 1) / num_inter_points
+                    inter_arm_action = (1 - alpha) * self.last_predicted_action + alpha * action
+                    # 夹爪不参与插值，直接锁到目标值
+                    if self.which_arm == 'both':
+                        inter_arm_action[7] = left_eef
+                        inter_arm_action[15] = right_eef
+                    elif self.which_arm == 'left':
+                        inter_arm_action[7] = left_eef
+                    else:  # right
+                        inter_arm_action[7] = right_eef
 
-                self.exec_action(inter_arm_action)
-                self.control_rate.sleep()
+                    self.exec_action(inter_arm_action)
+                    self.control_rate.sleep()
 
-            self.last_predicted_action = action
-            self.rate.sleep()
-
+                self.last_predicted_action = action.copy()
+                # self.rate.sleep()
         # === 5. 延时与观测 ===
         
         self._record_sleep_time(t2)
@@ -522,7 +544,7 @@ class KuavoBaseRosEnv(gym.Env):
         #     return
 
         if self.direct_to_wbc:
-                action = self.low_pass_filter.update(action)
+            action = self.low_pass_filter.update(action)
         if self.which_arm == 'both':
             left_joints, left_eef = action[:7], action[7]
             right_joints, right_eef = action[8:15], action[15]

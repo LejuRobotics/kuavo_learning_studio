@@ -202,14 +202,15 @@ python kuavo_deploy/eval.py
 
 | 主题           | 文档                                                                                               |
 | ------------ | ------------------------------------------------------------------------------------------------ |
-| 项目介绍         | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/get_started/intro.md)          |
-| 安装指南         | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/get_started/installation.md)   |
-| 快速开始         | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/tutorials/quick_start.md)      |
-| 数据准备         | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/tutorials/data_preparation.md) |
-| LeRobot 模型训练 | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/tutorials/lerobot_training.md) |
-| 外挂模型训练       | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/tutorials/model_training.md)   |
-| 推理与部署        | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/tutorials/inference.md)        |
-| 新策略拓展        | [查看文档](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/tutorials/bring_policies.md)   |
+| 项目介绍         | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#get_started/intro.md)          |
+| 安装指南         | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#get_started/installation.md)   |
+| 快速开始         | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#tutorials/quick_start.md)      |
+| 数据准备         | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#tutorials/data_preparation.md) |
+| LeRobot 模型训练 | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#tutorials/lerobot_training.md) |
+| 外挂模型训练       | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#tutorials/model_training.md)   |
+| 推理与部署        | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#tutorials/inference.md)        |
+| 新策略拓展        | [查看文档](https://huangrc1110.github.io/kuavo_docs/docs.html#tutorials/bring_policies.md)   |
+
 
 
 ## 💬 支持与反馈
@@ -220,8 +221,7 @@ python kuavo_deploy/eval.py
 | 我想要...           | 推荐渠道                                                                                                                   |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | 报告 Bug 或运行时报错    | [GitHub Issues](https://github.com/LejuRobotics/kuavo_learning_studio/issues/new?labels=bug)（请附环境信息、复现步骤、完整 traceback） |
-| 提交新功能建议 / 模型接入需求 | [GitHub Issues](https://github.com/LejuRobotics/kuavo_learning_studio/issues/new?labels=enhancement)                   |
-| 询问使用问题、寻求帮助      | [GitHub Discussions](https://github.com/LejuRobotics/kuavo_learning_studio/discussions)（推荐异步讨论，可被检索）                   |
+| 提交新功能建议 / 模型接入需求 | [GitHub Issues](https://github.com/LejuRobotics/kuavo_learning_studio/issues/new?labels=enhancement)                   |                   |
 | 国内用户交流群          | QQ 群 / 微信群入群方式见 [社区交流](https://github.com/huangrc1110/kuavo_docs/blob/master/docs/troubleshooting/community.md)        |
 | 项目合作 / 企业级支持     | [lejurobot@lejurobot.com](mailto:lejurobot@lejurobot.com)                                                              |
 
