@@ -42,7 +42,7 @@ eval:  # 训练中评测设置。
 
 wandb:  # wandb 设置。
   enable: false  # 是否启用 wandb。
-  disable_artifact: false  # 是否禁用向 wandb 上传文件。
+  disable_artifact: true  # 是否禁用向 wandb 上传权重文件。
   project: "lerobot"  # wandb 项目名。
   entity: null  # wandb 账号或团队名。
   notes: null  # wandb 备注。
